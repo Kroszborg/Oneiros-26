@@ -9,9 +9,9 @@ const Navbar: React.FC = () => {
     }, []);
 
     return (
-        <nav className="cosmos-navbar">
+        <nav className="cosmos-navbar font-manrope">
             <div className="cosmos-nav-logo mobile-logo">
-                <span className="neon-text">ONEIROS</span>
+                <img src="/oneiros-logo.png" alt="ONEIROS" className="logo-img" />
             </div>
 
             <button
@@ -26,17 +26,17 @@ const Navbar: React.FC = () => {
 
             <div className={`nav-links-container ${isMobileMenuOpen ? 'mobile-visible' : ''}`}>
                 <ul className="cosmos-nav-links left-links">
-                    <li><a href="#about">ABOUT</a></li>
-                    <li><a href="#events">EVENTS</a></li>
-                    <li><a href="#gallery">GALLERY</a></li>
+                    <li><a href="#about" className="font-medium tracking-[0.1em]">ABOUT</a></li>
+                    <li><a href="#events" className="font-medium tracking-[0.1em]">EVENTS</a></li>
+                    <li><a href="#gallery" className="font-medium tracking-[0.1em]">GALLERY</a></li>
                 </ul>
                 <div className="cosmos-nav-logo desktop-logo">
-                    <span className="neon-text">ONEIROS</span>
+                    <img src="/oneiros-logo.png" alt="ONEIROS" className="logo-img" />
                 </div>
                 <ul className="cosmos-nav-links right-links">
-                    <li><a href="#schedule">SCHEDULE</a></li>
-                    <li><a href="#sponsors">SPONSORS</a></li>
-                    <li><a href="#contact">CONTACT</a></li>
+                    <li><a href="#schedule" className="font-medium tracking-[0.1em]">SCHEDULE</a></li>
+                    <li><a href="#sponsors" className="font-medium tracking-[0.1em]">SPONSORS</a></li>
+                    <li><a href="#contact" className="font-medium tracking-[0.1em]">CONTACT</a></li>
                 </ul>
             </div>
         </nav>
