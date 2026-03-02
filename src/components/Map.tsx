@@ -8,11 +8,11 @@ const BOUNDARY_RADIUS = 54;
 const WALK_SPEED = 8;
 const RUN_SPEED = 18;
 const TURN_SPEED = 12;
-const CAM_DIST_DEFAULT = 8;
+const CAM_DIST_DEFAULT = 22;
 const CAM_DIST_MIN = 3;
-const CAM_DIST_MAX = 22;
-const CAM_PITCH_MIN = 0.08;
-const CAM_PITCH_MAX = 0.78;
+const CAM_DIST_MAX = 40;
+const CAM_PITCH_MIN = 0.02;
+const CAM_PITCH_MAX = 1.4;
 const CAM_SMOOTH = 0.14;
 const CAM_MAX_RADIUS = 57;
 const SPRINT_THRESHOLD = 0.72;
@@ -73,7 +73,7 @@ export default function Map() {
     );
 
     let camYaw = Math.PI;
-    let camPitch = 0.28;
+    let camPitch = 0.1;
     let camDist = CAM_DIST_DEFAULT;
     const camCurrent = new THREE.Vector3(0, 4, camDist);
 
@@ -555,13 +555,13 @@ export default function Map() {
         while (diff < -Math.PI) diff += Math.PI * 2;
         charRotY += diff * Math.min(TURN_SPEED * dt, 1.0);
 
-        // Camera auto-follows unless user is manually controlling it
-        if (!isDragging && camTouchId === null) {
-          let yd = (charRotY + Math.PI) - camYaw;
-          while (yd > Math.PI) yd -= Math.PI * 2;
-          while (yd < -Math.PI) yd += Math.PI * 2;
-          camYaw += yd * 0.04;
-        }
+        // Camera rotation is solely manual now. No auto-follow.
+        // if (!isDragging && camTouchId === null) {
+        //   let yd = (charRotY + Math.PI) - camYaw;
+        //   while (yd > Math.PI) yd -= Math.PI * 2;
+        //   while (yd < -Math.PI) yd += Math.PI * 2;
+        //   camYaw += yd * 0.04;
+        // }
       }
 
       if (armatures.length > 0) applyCharTransform();
