@@ -44,9 +44,13 @@ export default function Map() {
     if (isTouch && joystickZone) joystickZone.style.display = 'flex';
 
     // ── RENDERER ──────────────────────────────────────────────────────────────
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false, // Ensure no transparency lets the DOM show through
+    });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(new THREE.Color(0x020205), 1); // Set clear color explicitly
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -68,6 +72,7 @@ export default function Map() {
 
     // ── SCENE + CAMERA ─────────────────────────────────────────────────────────
     const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020205); // Very dark cosmic blue
     const camera = new THREE.PerspectiveCamera(
       60, window.innerWidth / window.innerHeight, 0.05, 300
     );
@@ -253,6 +258,167 @@ export default function Map() {
     neonSurface.position.y = GROUND_Y + 0.01; // Slightly above ground to prevent z-fight with map
     neonSurface.receiveShadow = false; // Disable shadow reception so it doesn't darken the neon lines
     scene.add(neonSurface);
+
+    // ── STARS (SKY) ────────────────────────────────────────────────────────
+    const STARS_COUNT = 3000;
+    const sPos = new Float32Array(STARS_COUNT * 3);
+    const sBaseCol = new Float32Array(STARS_COUNT * 3);
+    const sPhase = new Float32Array(STARS_COUNT); // random phase for twinkling
+    const sSz = new Float32Array(STARS_COUNT);
+
+    for (let i = 0; i < STARS_COUNT; i++) {
+      const radius = 120 + Math.random() * 80;
+      const u = Math.random();
+      const v = Math.random();
+      const theta = 2 * Math.PI * u;
+      const phi = Math.acos(v); // 0 to pi/2 (upper half)
+
+      sPos[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+      sPos[i * 3 + 1] = radius * Math.cos(phi) - 10; // raised slightly
+      sPos[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+
+      const intensity = 0.5 + Math.random() * 0.5;
+      const colorType = Math.random();
+      const c = new THREE.Color(0xffffff);
+      if (colorType > 0.8) c.setHex(0xaaaaFF);
+      else if (colorType > 0.6) c.setHex(0xffddaa);
+
+      sBaseCol[i * 3] = c.r * intensity;
+      sBaseCol[i * 3 + 1] = c.g * intensity;
+      sBaseCol[i * 3 + 2] = c.b * intensity;
+
+      sPhase[i] = Math.random() * Math.PI * 2;
+      sSz[i] = 2.0 + Math.random() * 4.0; // doubled size so they show up easily
+    }
+
+    const starsGeo = new THREE.BufferGeometry();
+    starsGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
+    starsGeo.setAttribute('color', new THREE.BufferAttribute(sBaseCol, 3));
+    starsGeo.setAttribute('phase', new THREE.BufferAttribute(sPhase, 1));
+    starsGeo.setAttribute('size', new THREE.BufferAttribute(sSz, 1));
+
+    const starCanvas = document.createElement('canvas');
+    starCanvas.width = starCanvas.height = 32;
+    const starCtx = starCanvas.getContext('2d')!;
+    const starGrd = starCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    starGrd.addColorStop(0, 'rgba(255,255,255,1)');
+    starGrd.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+    starGrd.addColorStop(0.5, 'rgba(255,255,255,0.2)');
+    starGrd.addColorStop(1, 'rgba(255,255,255,0)');
+    starCtx.fillStyle = starGrd;
+    starCtx.fillRect(0, 0, 32, 32);
+    const starTex = new THREE.CanvasTexture(starCanvas);
+
+    const starsMat = new THREE.ShaderMaterial({
+      uniforms: {
+        time: { value: 0 },
+        starTexture: { value: starTex }
+      },
+      vertexShader: `
+        attribute float phase;
+        attribute float size;
+        attribute vec3 color;
+        varying vec3 vColor;
+        varying float vAlpha;
+        uniform float time;
+        void main() {
+          vColor = color;
+          // Twinkle effect
+          vAlpha = 0.5 + 0.5 * sin(time * 2.0 + phase);
+          // Glitch / fast flicker for some stars
+          if (fract(phase * 12.3) > 0.9) {
+              vAlpha *= 0.5 + 0.5 * sin(time * 15.0 + phase * 100.0);
+          }
+          vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = size * (300.0 / -mvPosition.z) * (0.5 + vAlpha * 0.5);
+          gl_Position = projectionMatrix * mvPosition;
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D starTexture;
+        varying vec3 vColor;
+        varying float vAlpha;
+        void main() {
+          vec4 texColor = texture2D(starTexture, gl_PointCoord);
+          gl_FragColor = vec4(vColor * vAlpha * texColor.rgb, texColor.a * vAlpha);
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: true,
+    });
+
+    const starsObj = new THREE.Points(starsGeo, starsMat);
+    starsObj.renderOrder = -1; // Draw *first* over the background, before other transparent things
+    scene.add(starsObj);
+
+    // ── SHOOTING STARS ────────────────────────────────────────────────────────
+    const ssGeo = new THREE.BufferGeometry();
+    const MAX_SHOOTING_STARS = 15;
+    const ssPos = new Float32Array(MAX_SHOOTING_STARS * 6);
+    const ssCol = new Float32Array(MAX_SHOOTING_STARS * 6);
+
+    for (let i = 0; i < MAX_SHOOTING_STARS * 6; i++) {
+      ssPos[i] = 0;
+      if (i % 3 === 1) ssPos[i] = -1000;
+    }
+
+    type SSData = { active: boolean, pos: THREE.Vector3, dir: THREE.Vector3, speed: number, length: number, age: number, maxAge: number };
+    const ssData: SSData[] = [];
+    for (let i = 0; i < MAX_SHOOTING_STARS; i++) {
+      ssData.push({
+        active: false,
+        pos: new THREE.Vector3(),
+        dir: new THREE.Vector3(),
+        speed: 0,
+        length: 0,
+        age: 0,
+        maxAge: 0,
+      });
+    }
+
+    ssGeo.setAttribute('position', new THREE.BufferAttribute(ssPos, 3));
+    ssGeo.setAttribute('color', new THREE.BufferAttribute(ssCol, 3));
+
+    const ssMat = new THREE.LineBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      linewidth: 2, // Depending on WebGL implementation...
+    });
+
+    const ssObj = new THREE.LineSegments(ssGeo, ssMat);
+    ssObj.renderOrder = -1;
+    scene.add(ssObj);
+
+    const resetShootingStar = (index: number) => {
+      const d = ssData[index];
+      d.active = true;
+      const r = 120 + Math.random() * 50;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.random() * Math.PI * 0.25 + 0.05;
+      d.pos.set(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.cos(phi),
+        r * Math.sin(phi) * Math.sin(theta)
+      );
+      d.dir.set(
+        (Math.random() - 0.5) * 2,
+        -Math.random() * 0.2 - 0.05,
+        (Math.random() - 0.5) * 2
+      ).normalize();
+
+      d.speed = 150 + Math.random() * 100;
+      d.length = 15 + Math.random() * 25;
+      d.age = 0;
+      d.maxAge = 0.5 + Math.random() * 0.8;
+
+      const i3 = index * 6;
+      ssCol[i3] = 1; ssCol[i3 + 1] = 1; ssCol[i3 + 2] = 1;
+      ssCol[i3 + 3] = 0; ssCol[i3 + 4] = 0; ssCol[i3 + 5] = 0;
+    };
 
     // ── RESIZE ────────────────────────────────────────────────────────────────
     const onResize = () => {
@@ -475,11 +641,8 @@ export default function Map() {
         if (!node.isMesh) return;
         const n: string = node.name.toLowerCase();
 
-        if (n === 'sphere') {
-          const mats: THREE.Material[] = Array.isArray(node.material)
-            ? node.material : [node.material];
-          mats.forEach(mat => { mat.side = THREE.DoubleSide; });
-          node.castShadow = node.receiveShadow = false;
+        if (n === 'sphere' || n.includes('sky')) {
+          node.visible = false; // Hide the baked-in white sky dome
         } else if (n === 'building' || n === 'plane.002') {
           const mats: THREE.Material[] = Array.isArray(node.material)
             ? node.material : [node.material];
@@ -565,6 +728,45 @@ export default function Map() {
       }
 
       if (armatures.length > 0) applyCharTransform();
+
+      // ── UPDATE STARS ────────────────────────────────────────────────────────
+      starsMat.uniforms.time.value += dt;
+
+      // ── UPDATE SHOOTING STARS ─────────────────────────────────────────────────
+      for (let i = 0; i < MAX_SHOOTING_STARS; i++) {
+        const d = ssData[i];
+        if (!d.active) {
+          if (Math.random() < 0.015) {
+            resetShootingStar(i);
+          }
+          continue;
+        }
+
+        d.age += dt;
+        if (d.age >= d.maxAge) {
+          d.active = false;
+          ssPos[i * 6] = 0; ssPos[i * 6 + 1] = -1000; ssPos[i * 6 + 2] = 0;
+          ssPos[i * 6 + 3] = 0; ssPos[i * 6 + 4] = -1000; ssPos[i * 6 + 5] = 0;
+          continue;
+        }
+
+        d.pos.addScaledVector(d.dir, d.speed * dt);
+
+        const head = d.pos;
+        const tail = d.pos.clone().addScaledVector(d.dir, -d.length);
+
+        const idx = i * 6;
+        ssPos[idx] = head.x; ssPos[idx + 1] = head.y; ssPos[idx + 2] = head.z;
+        ssPos[idx + 3] = tail.x; ssPos[idx + 4] = tail.y; ssPos[idx + 5] = tail.z;
+
+        let alpha = 1.0;
+        if (d.age > d.maxAge - 0.2) alpha = (d.maxAge - d.age) / 0.2;
+        else if (d.age < 0.2) alpha = d.age / 0.2;
+
+        ssCol[idx] = alpha; ssCol[idx + 1] = alpha; ssCol[idx + 2] = alpha;
+      }
+      ssGeo.attributes.position.needsUpdate = true;
+      ssGeo.attributes.color.needsUpdate = true;
 
       // ── UPDATE EMBERS ───────────────────────────────────────────────────────
       for (let i = 0; i < EMBER_COUNT; i++) {
@@ -743,6 +945,11 @@ export default function Map() {
       emberGeo.dispose();
       emberMat.dispose();
       spriteTex.dispose();
+      starsGeo.dispose();
+      starsMat.dispose();
+      starTex.dispose();
+      ssGeo.dispose();
+      ssMat.dispose();
       if (container.contains(canvas)) container.removeChild(canvas);
     };
   }, []);
