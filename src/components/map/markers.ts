@@ -7,8 +7,9 @@ export type MarkerRuntime = {
   pos: THREE.Vector3;
   color: number;
   group: THREE.Group;
-  ring: THREE.Mesh;
-  pillar: THREE.Mesh;
+  beam: THREE.Mesh;
+  chevron: THREE.Mesh;
+  groundDisc: THREE.Mesh;
   glow: THREE.PointLight;
   baseY: number;
 };
@@ -65,27 +66,56 @@ export const createSceneMarkers = (
   defs: MarkerDef[],
 ) => {
   const markers: MarkerRuntime[] = [];
-  const ringGeo = new THREE.TorusGeometry(1.2, 0.08, 16, 48);
-  const pillarGeo = new THREE.CylinderGeometry(0.06, 0.06, 4, 8);
+
+  // GTA-style marker geometries
+  const beamGeo = new THREE.CylinderGeometry(0.7, 0.7, 8, 24, 1, true); // open-ended tall cylinder
+  const chevronGeo = new THREE.ConeGeometry(0.6, 0.9, 4);               // 4-sided = diamond arrow look
+  const groundDiscGeo = new THREE.RingGeometry(0.6, 1.4, 48);           // hollow ring on ground
 
   for (const def of defs) {
     const col = new THREE.Color(def.color);
     const group = new THREE.Group();
     group.position.set(def.pos[0], def.pos[1], def.pos[2]);
 
-    const pillarMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.45 });
-    const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-    pillar.position.y = 2;
-    group.add(pillar);
+    // ── Tall translucent beam (open cylinder) ──
+    const beamMat = new THREE.MeshBasicMaterial({
+      color: col,
+      transparent: true,
+      opacity: 0.13,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const beam = new THREE.Mesh(beamGeo, beamMat);
+    beam.position.y = 4.0; // centered at y=4 so it spans 0–8
+    group.add(beam);
 
-    const ringMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.8 });
-    const ring = new THREE.Mesh(ringGeo, ringMat);
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = 3.5;
-    group.add(ring);
+    // ── Rotating chevron/arrow pointing down at the top ──
+    const chevronMat = new THREE.MeshBasicMaterial({
+      color: col,
+      transparent: true,
+      opacity: 0.85,
+    });
+    const chevron = new THREE.Mesh(chevronGeo, chevronMat);
+    chevron.rotation.x = Math.PI; // point downwards
+    chevron.position.y = 8.5;
+    group.add(chevron);
 
-    const glow = new THREE.PointLight(def.color, 2, 12);
-    glow.position.y = 2.5;
+    // ── Ground ring disc ──
+    const groundDiscMat = new THREE.MeshBasicMaterial({
+      color: col,
+      transparent: true,
+      opacity: 0.35,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    const groundDisc = new THREE.Mesh(groundDiscGeo, groundDiscMat);
+    groundDisc.rotation.x = -Math.PI / 2;
+    groundDisc.position.y = 0.06;
+    group.add(groundDisc);
+
+    // ── Soft point light at mid-height ──
+    const glow = new THREE.PointLight(def.color, 1.8, 12);
+    glow.position.y = 3.5;
     group.add(glow);
 
     scene.add(group);
@@ -96,12 +126,13 @@ export const createSceneMarkers = (
       pos: new THREE.Vector3(def.pos[0], def.pos[1], def.pos[2]),
       color: def.color,
       group,
-      ring,
-      pillar,
+      beam,
+      chevron,
+      groundDisc,
       glow,
       baseY: def.pos[1],
     });
   }
 
-  return { markers, ringGeo, pillarGeo };
+  return { markers, beamGeo, chevronGeo, groundDiscGeo };
 };

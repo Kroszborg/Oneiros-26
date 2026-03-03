@@ -234,7 +234,7 @@ export default function Map({ onNavigate }: MapProps) {
 
     // ── INTERACTIVE 3D MARKERS ─────────────────────────────────────────────────
     const markerPrompt = createMarkerPrompt();
-    const { markers, ringGeo, pillarGeo } = createSceneMarkers(scene, MARKER_DEFS);
+    const { markers, beamGeo, chevronGeo, groundDiscGeo } = createSceneMarkers(scene, MARKER_DEFS);
     let activeMarkerIdx = -1; // index of the marker the player is close to
 
     // E-key handler for marker activation
@@ -883,13 +883,23 @@ export default function Map({ onNavigate }: MapProps) {
         const dz = charPos.z - m.pos.z;
         const dist = Math.sqrt(dx * dx + dz * dz);
 
-        // Animate: ring spins, pillar bobs
-        m.ring.rotation.z = elapsed * 1.5 + mi * 1.2;
-        m.ring.position.y = 3.5 + Math.sin(elapsed * 1.8 + mi) * 0.25;
-        m.pillar.position.y = 2 + Math.sin(elapsed * 1.2 + mi * 0.7) * 0.15;
+        // GTA-style animation
+        const phase = mi * 1.3;
 
-        // Pulse glow intensity
-        m.glow.intensity = 1.5 + Math.sin(elapsed * 2.5 + mi * 0.9) * 0.8;
+        // Chevron: rotate steadily + gentle bob
+        m.chevron.rotation.y = elapsed * 1.8 + phase;
+        m.chevron.position.y = 8.5 + Math.sin(elapsed * 1.5 + phase) * 0.25;
+
+        // Beam: subtle opacity pulse
+        (m.beam.material as THREE.MeshBasicMaterial).opacity =
+          0.11 + Math.sin(elapsed * 1.2 + phase) * 0.04;
+
+        // Ground ring: gentle opacity breathe
+        (m.groundDisc.material as THREE.MeshBasicMaterial).opacity =
+          0.28 + Math.sin(elapsed * 1.4 + phase) * 0.10;
+
+        // Soft glow pulse
+        m.glow.intensity = 1.5 + Math.sin(elapsed * 1.6 + phase * 0.9) * 0.5;
 
         if (dist < MARKER_INTERACT_RADIUS && dist < closestDist) {
           closestDist = dist;
@@ -1092,11 +1102,13 @@ export default function Map({ onNavigate }: MapProps) {
       if (document.body.contains(loadingBadge)) document.body.removeChild(loadingBadge);
 
       // Dispose marker geometries
-      ringGeo.dispose();
-      pillarGeo.dispose();
+      beamGeo.dispose();
+      chevronGeo.dispose();
+      groundDiscGeo.dispose();
       for (const m of markers) {
-        (m.ring.material as THREE.Material).dispose();
-        (m.pillar.material as THREE.Material).dispose();
+        (m.beam.material as THREE.Material).dispose();
+        (m.chevron.material as THREE.Material).dispose();
+        (m.groundDisc.material as THREE.Material).dispose();
         m.glow.dispose();
       }
 
