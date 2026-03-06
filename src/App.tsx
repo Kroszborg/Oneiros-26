@@ -3,6 +3,7 @@ import Preloader from './components/Preloader';
 import Navbar from './components/Navbar';
 import Map from './components/Map';
 import About from './components/About';
+import Team from './components/Team';
 import Events from './components/Events';
 import MajorEvents from './components/MajorEvents';
 import MinorEvents from './components/MinorEvents';
@@ -27,6 +28,7 @@ export default function App() {
 
   const pageComponents: Record<string, React.ReactNode> = {
     about: <About />,
+    team: <Team />,
     events: <Events />,
     'major-events': <MajorEvents />,
     'minor-events': <MinorEvents />,

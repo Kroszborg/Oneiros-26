@@ -3,14 +3,53 @@ import CosmicBackground from './CosmicBackground';
 import DomeGallery from './DomeGallery';
 import './MinorEvents.css';
 
+const MINOR_EVENT_IMAGES = [
+    '/minor_events/IMG_0186.jpg',
+    '/minor_events/IMG_0204.jpg',
+    '/minor_events/IMG_6541.jpg',
+    '/minor_events/DSC03734-Enhanced-NR.jpg',
+    '/minor_events/IMG_0074.jpg',
+    '/minor_events/IMG_0184-Enhanced-NR.jpg',
+    '/minor_events/IMG_0652-Enhanced-NR.jpg',
+    '/minor_events/IMG_4068-Enhanced-NR.jpg',
+    '/minor_events/IMG_4095-Enhanced-NR.jpg',
+    '/minor_events/IMG_6993-Enhanced-NR.jpg',
+    '/minor_events/IMG_7284-Enhanced-NR.jpg',
+    '/minor_events/016A4770.jpg',
+    '/minor_events/016A4786.jpg',
+    '/minor_events/016A4822-Enhanced-NR.jpg',
+    '/minor_events/IMG_0701-Enhanced-NR.jpg',
+    '/minor_events/IMG_6500-Enhanced-NR.jpg',
+    '/minor_events/IMG_6569.jpg',
+    '/minor_events/Woodstock-33.jpg'
+];
+
 export default function MinorEvents() {
     const sectionRef = useRef<HTMLDivElement>(null);
-    const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const domeRef = useRef<HTMLDivElement>(null);
+    const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 768 : false);
+    const [domeVisible, setDomeVisible] = useState(false);
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth <= 768);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Lazy-mount the DomeGallery only when its section scrolls into view
+    useEffect(() => {
+        if (!domeRef.current) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setDomeVisible(true);
+                    observer.disconnect();
+                }
+            },
+            { rootMargin: '300px' } // start loading 300px before section appears
+        );
+        observer.observe(domeRef.current);
+        return () => observer.disconnect();
     }, []);
 
     useEffect(() => {
@@ -128,16 +167,19 @@ export default function MinorEvents() {
                 </section>
 
                 {/* ── SHOWCASE GALLERY SECTION ──────────────────────────── */}
-                <section className="minor-events-dome-section minor-events-animate">
-                    <DomeGallery
-                        fit={isMobile ? 0.7 : 0.9}
-                        minRadius={isMobile ? 60 : 60}
-                        maxVerticalRotationDeg={0}
-                        segments={isMobile ? 18 : 28}
-                        dragDampening={5}
-                        grayscale={true}
-                        imageBorderRadius={isMobile ? "16px" : "50px"}
-                    />
+                <section className="minor-events-dome-section minor-events-animate" ref={domeRef}>
+                    {domeVisible && (
+                        <DomeGallery
+                            images={MINOR_EVENT_IMAGES}
+                            fit={isMobile ? 0.7 : 0.9}
+                            minRadius={isMobile ? 60 : 60}
+                            maxVerticalRotationDeg={0}
+                            segments={isMobile ? 18 : 28}
+                            dragDampening={5}
+                            grayscale={false}
+                            imageBorderRadius={isMobile ? "16px" : "50px"}
+                        />
+                    )}
                     <div className="minor-events-dome-overlay-text">
                         <p className="minor-events-dome-label minor-events-animate minor-events-animate-delay-1">THE ARCHIVE</p>
                         <h2 className="minor-events-dome-heading minor-events-animate minor-events-animate-delay-2">Constellations of Memory</h2>

@@ -46,6 +46,7 @@ export default function Navbar({ onNavigate }: NavbarProps) {
             <div id={navMenuId} className={`nav-links-container ${isMobileMenuOpen ? 'mobile-visible' : ''}`}>
                 <ul className="cosmos-nav-links left-links">
                     <li><a href="#about" onClick={(e) => handleNavClick(e, 'about')} className="font-medium tracking-[0.1em]">ABOUT</a></li>
+                    <li><a href="#team" onClick={(e) => handleNavClick(e, 'team')} className="font-medium tracking-[0.1em]">TEAM</a></li>
                     <li><a href="#major-events" onClick={(e) => handleNavClick(e, 'major-events')} className="font-medium tracking-[0.1em]">MAJOR EVENTS</a></li>
                     <li><a href="#minor-events" onClick={(e) => handleNavClick(e, 'minor-events')} className="font-medium tracking-[0.1em]">MINOR EVENTS</a></li>
                 </ul>
