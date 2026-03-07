@@ -311,6 +311,10 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     const markerPrompt = createMarkerPrompt();
     const { markers, beamGeo, chevronGeo, groundDiscGeo, outerRingGeo } = createSceneMarkers(scene, MARKER_DEFS);
     let activeMarkerIdx = -1;
+    const hideMarkerPrompt = () => {
+      activeMarkerIdx = -1;
+      setMarkerPromptState(markerPrompt, null, false);
+    };
 
     const onMarkerActivate = () => {
       if (activeMarkerIdx < 0) return;
@@ -318,6 +322,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       const dx = charPos.x - m.pos.x;
       const dz = charPos.z - m.pos.z;
       if (Math.sqrt(dx * dx + dz * dz) <= MARKER_ACTIVATE_RADIUS) {
+        hideMarkerPrompt();
         onNavigateRef.current?.(m.page);
       }
     };
@@ -717,7 +722,10 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       // If a React UI overlay is open, seamlessly freeze the 3D scene.
       // This immediately frees all computing power to render heavy DOM components,
       // fixing the transition stutter caused by simultaneous rendering contention.
-      if (activePageRef.current) return;
+      if (activePageRef.current) {
+        hideMarkerPrompt();
+        return;
+      }
 
       frameCount++;
       const dt = Math.min(timer.getDelta(), 0.05);
@@ -1183,12 +1191,17 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     const hudEl = document.getElementById('hud');
     const stateEl = document.getElementById('state');
     const canvas = mountRef.current?.querySelector('canvas') as HTMLCanvasElement | null;
+    const markerPrompt = document.getElementById('marker-prompt') as HTMLDivElement | null;
 
     if (activePage || !hasStartedRef.current) {
       if (joystickZone) joystickZone.style.display = 'none';
       if (hudEl) hudEl.style.display = 'none';
       if (stateEl) stateEl.style.display = 'none';
       if (canvas) canvas.style.pointerEvents = 'none';
+      if (markerPrompt) {
+        markerPrompt.style.opacity = '0';
+        markerPrompt.style.pointerEvents = 'none';
+      }
     } else {
       if (canvas) canvas.style.pointerEvents = 'auto';
       const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
