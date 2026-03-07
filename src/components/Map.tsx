@@ -315,7 +315,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
     const onMarkerKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'e' || e.key === 'E') {
         if (activePageRef.current === 'contact') return; // Disable 'E' to go back specifically on Contact page
-        
+
         if (activePageRef.current) onCloseRef.current?.();
         else onMarkerActivate();
       }
@@ -759,6 +759,9 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
       }
 
       // ── AUTO-ROTATE CAMERA BEHIND CHARACTER ──────────────────────────────────
+      // Removed: Auto-rotating continuous movement causes a feedback loop where moving backward or sideways
+      // swings the camera, changing the move direction interactively and looping continuously.
+      /*
       if (moving && !isDragging && camTouchId === null && !isIntroActive) {
         const targetCamYaw = charRotY + Math.PI;
         let yawDiff = targetCamYaw - camYaw;
@@ -766,6 +769,7 @@ export default function Map({ onNavigate, onClose, activePage }: MapProps) {
         while (yawDiff < -Math.PI) yawDiff += Math.PI * 2;
         camYaw += yawDiff * Math.min(3.0 * dt, 1.0);
       }
+      */
 
       if (charArmature) {
         const idleY = moving ? 0 : Math.sin(elapsed * 1.6) * 0.065;
