@@ -1,8 +1,12 @@
 {
-    "rewrites": [
+    "routes": [
         {
-            "source": "/((?!robots.txt|sitemap.xml|favicon.ico).*)",
-            "destination": "/"
+            "src": "/(robots.txt|sitemap.xml|favicon.ico)",
+            "dest": "/$1"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/index.html"
         }
     ]
 }
