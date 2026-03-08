@@ -1,0 +1,383 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   NavigationHub — cosmic carousel landing experience
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Hub container ─────────────────────────────────────────────────── */
+.nav-hub {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  overflow: hidden;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.nav-hub--hidden {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.nav-hub--opening {
+  pointer-events: none;
+}
+
+/* ── Header / title ────────────────────────────────────────────────── */
+.nav-hub__header {
+  position: absolute;
+  top: clamp(80px, 14vh, 140px);
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.nav-hub__title {
+  font-family: 'Orbitron', 'Exo 2', sans-serif;
+  font-size: clamp(2.2rem, 6vw, 4.5rem);
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  color: #fff;
+  text-shadow:
+    0 0 30px rgba(139, 92, 246, 0.5),
+    0 0 60px rgba(6, 182, 212, 0.25);
+  margin: 0;
+  line-height: 1.1;
+}
+
+.nav-hub__subtitle {
+  font-family: 'Orbitron', 'Exo 2', sans-serif;
+  font-size: clamp(0.9rem, 2vw, 1.4rem);
+  font-weight: 400;
+  letter-spacing: 0.8em;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0.6rem 0 0;
+}
+
+/* ── Carousel ──────────────────────────────────────────────────────── */
+.nav-hub__carousel {
+  --hub-gap: clamp(160px, 28vw, 320px);
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1200px;
+}
+
+/* ── Card ──────────────────────────────────────────────────────────── */
+.nav-hub__card {
+  position: absolute;
+  transform:
+    translateX(calc(var(--offset) * var(--hub-gap)))
+    translateZ(calc(var(--abs-offset) * -60px))
+    rotateY(calc(var(--offset) * -4deg))
+    scale(var(--card-scale));
+  opacity: var(--card-opacity);
+  transition:
+    transform 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+    opacity 0.4s ease;
+  cursor: pointer;
+  will-change: transform, opacity;
+}
+
+.nav-hub__card--active {
+  cursor: pointer;
+}
+
+/* Opening zoom animation */
+.nav-hub__card--opening {
+  animation: card-zoom-in 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes card-zoom-in {
+  0% {
+    transform: translateX(0) translateZ(0) scale(1);
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    transform: translateX(0) translateZ(200px) scale(2.5);
+    opacity: 0;
+    filter: blur(12px);
+  }
+}
+
+/* Return emerge animation */
+.nav-hub--returning .nav-hub__card {
+  animation: card-emerge 0.55s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+
+@keyframes card-emerge {
+  0% {
+    opacity: 0;
+    filter: blur(8px);
+  }
+  100% {
+    opacity: var(--card-opacity);
+    filter: blur(0);
+  }
+}
+
+/* Card inner structure */
+.nav-hub__card-border {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.nav-hub__card--active .nav-hub__card-border {
+  border-color: var(--element-color);
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--element-color) 25%, transparent),
+    inset 0 0 20px color-mix(in srgb, var(--element-color) 8%, transparent);
+  transition: border-color 0.5s ease, box-shadow 0.5s ease;
+}
+
+.nav-hub__card-image-wrapper {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  z-index: 0;
+  background: #080814;
+}
+
+.nav-hub__card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.6s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.nav-hub__card--active .nav-hub__card-image {
+  transform: scale(1.08);
+}
+
+.nav-hub__card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(5, 5, 15, 0.2) 0%,
+    rgba(5, 5, 15, 0.5) 40%,
+    rgba(5, 5, 15, 0.95) 100%
+  );
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.nav-hub__card-glow {
+  position: absolute;
+  inset: -40px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--element-color) 12%, transparent) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  z-index: -1;
+}
+
+.nav-hub__card--active .nav-hub__card-glow {
+  opacity: 1;
+}
+
+.nav-hub__card-content {
+  position: relative;
+  z-index: 1;
+  width: clamp(200px, 52vw, 300px);
+  min-height: clamp(280px, 65vw, 420px);
+  padding: clamp(28px, 5vw, 48px) clamp(20px, 4vw, 36px);
+  background: transparent;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: clamp(8px, 2vw, 16px);
+}
+
+.nav-hub__card-icon {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  line-height: 1;
+  color: var(--element-color);
+  filter: drop-shadow(0 0 8px var(--element-color)) drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+}
+
+.nav-hub__card-label {
+  font-family: 'Orbitron', 'Exo 2', sans-serif;
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: #fff;
+  margin: 0;
+  text-transform: uppercase;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8), 0 0 4px rgba(0, 0, 0, 0.6);
+}
+
+.nav-hub__card-desc {
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: clamp(0.75rem, 1.8vw, 0.95rem);
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  line-height: 1.4;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Swipe hint on active card */
+.nav-hub__card-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: clamp(8px, 2vw, 16px);
+  color: rgba(255, 255, 255, 0.6);
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: clamp(0.65rem, 1.5vw, 0.8rem);
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+  animation: hint-pulse 2s ease-in-out infinite;
+}
+
+.nav-hub__hint-arrow {
+  font-size: 1.2rem;
+  animation: hint-bounce 1.5s ease-in-out infinite;
+}
+
+@keyframes hint-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes hint-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* ── Dot indicators ────────────────────────────────────────────────── */
+.nav-hub__dots {
+  position: absolute;
+  bottom: clamp(60px, 10vh, 100px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 3;
+}
+
+.nav-hub__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.35s ease;
+}
+
+.nav-hub__dot--active {
+  background: var(--dot-color);
+  border-color: var(--dot-color);
+  box-shadow: 0 0 8px var(--dot-color);
+  transform: scale(1.3);
+}
+
+/* ── Desktop navigation arrows ─────────────────────────────────────── */
+.nav-hub__arrow {
+  display: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(8, 8, 20, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.nav-hub__arrow:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #fff;
+}
+
+.nav-hub__arrow--left {
+  left: clamp(16px, 3vw, 40px);
+}
+
+.nav-hub__arrow--right {
+  right: clamp(16px, 3vw, 40px);
+}
+
+/* ── Gesture hint (mobile) ─────────────────────────────────────────── */
+.nav-hub__gesture-hint {
+  position: absolute;
+  bottom: clamp(28px, 5vh, 50px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Manrope', 'Inter', sans-serif;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.25);
+  letter-spacing: 0.15em;
+  white-space: nowrap;
+  pointer-events: none;
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Desktop: wider cards, show arrows, hide gesture hint */
+@media (min-width: 768px) {
+  .nav-hub__carousel {
+    --hub-gap: clamp(260px, 24vw, 360px);
+  }
+
+  .nav-hub__card-content {
+    width: clamp(260px, 22vw, 340px);
+    padding: clamp(36px, 3vw, 56px) clamp(28px, 2.5vw, 44px);
+  }
+
+  .nav-hub__arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-hub__gesture-hint {
+    display: none;
+  }
+}
+
+/* Large desktop */
+@media (min-width: 1200px) {
+  .nav-hub__carousel {
+    --hub-gap: clamp(300px, 22vw, 400px);
+  }
+}
